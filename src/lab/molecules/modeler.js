@@ -90,6 +90,25 @@ modeler.makeIntegrator = function(args) {
         return twoKE;
       }()),
 
+      // initial center of mass; used to calculate drift
+      CM_initial = (function() {
+        var CM = [0, 0], i, n = nodes[0].length;
+        for (i = 0; i < n; i++) {
+          CM[0] += x[i];
+          CM[1] += y[i];
+        }
+        CM[0] /= n;
+        CM[1] /= n;
+
+        return CM;
+      }()),
+
+      // CM at time (t-dt)
+      CM_prev = arrays.copy(CM_initial, []),
+
+      // overall drift in the center of mass
+      drift_CM = [0, 0],
+
       // Coupling factor for Berendsen thermostat.
       dt_over_tau = 0.01,
 
@@ -209,6 +228,8 @@ modeler.makeIntegrator = function(args) {
           topwall    = size[1] - radius[0],
 
           PE,                             // potential energy
+          CM,                             // center of mass as [x, y]
+          dCM = [0, 0],                   // change in center of mass as [dx, dy]
           T = KE_to_T(twoKE/2),           // temperature
           vRescalingFactor,               // rescaling factor for Berendsen thermostat
 
@@ -232,6 +253,7 @@ modeler.makeIntegrator = function(args) {
 
         // Initialize sums such as 'twoKE' which need be accumulated once per integration loop:
         twoKE = 0;
+        CM = [0, 0];
 
         //
         // Use velocity Verlet integration to continue particle movement integrating acceleration with
@@ -295,10 +317,21 @@ modeler.makeIntegrator = function(args) {
           } else {
             py[i] = y_initial;
           }
+
+          // Accumulate xs & ys for CM
+          CM[0] += x[i];
+          CM[1] += y[i];
+
         }
 
         // Calculate T(t+dt) from x(t+dt), x(t)
         T = KE_to_T( twoKE/2 );
+
+        // Calculate center of mass and change in center of mass between t and t+dt
+        CM[0] /= n;
+        CM[1] /= n;
+        dCM[0] = CM[0] - CM_prev[0];
+        dCM[1] = CM[1] - CM_prev[1];
 
         // Calculate a(t+dt), step 1: Zero out the acceleration, in order to accumulate pairwise interactions.
         for (i = 0; i < n; i++) {
@@ -343,6 +376,8 @@ modeler.makeIntegrator = function(args) {
           vx[i] += 0.5*ax[i]*dt;
           vy[i] += 0.5*ay[i]*dt;
         }
+
+        CM_prev = CM;
       }
 
       // Calculate potentials. Note that we only want to do this once per call to integrate(), not once per
@@ -366,12 +401,24 @@ modeler.makeIntegrator = function(args) {
         }
       }
 
+      drift_CM[0] = CM[0] - CM_initial[0];
+      drift_CM[1] = CM[1] - CM_initial[1];
+
       // State to be read by the rest of the system:
       outputState.time = time;
       outputState.pressure = pressure / (time - t_start);
       outputState.PE = PE;
       outputState.KE = twoKE / 2;
       outputState.T = T;
+      outputState.CM = CM;
+      outputState.drift_CM = drift_CM;
+
+      // quick log:
+
+      dx = drift_CM[0];
+      dy = drift_CM[1];
+
+      console.log("CM distance = %f", Math.sqrt(dx*dx + dy*dy));
     }
   };
 };
@@ -814,8 +861,8 @@ modeler.model = function() {
 
   model.relax = function() {
     // thermalize enough that relaxToTemperature doesn't need a ridiculous window size
-    integrator.integrate(100, 1/20);
-    integrator.relaxToTemperature();
+    //integrator.integrate(100, 1/20);
+    //integrator.relaxToTemperature();
     return model;
   };
 
@@ -855,9 +902,13 @@ modeler.model = function() {
 
         v0,
         i, r, c, nrows, ncols, rowSpacing, colSpacing,
-        vMagnitude, vDirection;
+        vMagnitude, vDirection, v_CM_initial;
 
-    mol_number = num;
+    nrows = Math.floor(Math.sqrt(num));
+    ncols = nrows;
+    num   = nrows * ncols;
+
+    mol_number   = num;
     atoms.length = num;
 
     nodes = arrays.create(node_properties_length, null, 'regular');
@@ -910,12 +961,8 @@ modeler.model = function() {
     nodes[model.INDICES.CHARGE] = arrays.create(num, 0, array_type);
     charge = nodes[model.INDICES.CHARGE];
 
-
     // Actually arrange the atoms.
     v0 = Math.sqrt(2*abstract_to_real_temperature(temperature));
-
-    nrows = Math.ceil(Math.sqrt(num));
-    ncols = Math.ceil(num / nrows);
 
     colSpacing = size[0] / (1+ncols);
     rowSpacing = size[1] / (1+nrows);
@@ -923,9 +970,14 @@ modeler.model = function() {
     // Arrange molecules in a lattice. Not guaranteed to have CM exactly on center, and is an artificially low-energy
     // configuration. But it works OK for now.
     i = -1;
+
+    v_CM_initial = [0, 0];
+
     for (r = 1; r <= nrows; r++) {
       for (c = 1; c <= ncols; c++) {
         i++;
+        if (i === mol_number) break;
+
         x[i] = c*colSpacing;
         y[i] = r*rowSpacing;
 
@@ -942,9 +994,12 @@ modeler.model = function() {
           vDirection = 2 * Math.random() * Math.PI;
           vx[i] = vMagnitude * Math.cos(vDirection);
           vy[i] = vMagnitude * Math.sin(vDirection);
-          vx[num-i] = -vx[i];
-          vy[num-i] = -vy[i];
+          vx[num-i-1] = -vx[i];
+          vy[num-i-1] = -vy[i];
         }
+
+        v_CM_initial[0] += vx[i];
+        v_CM_initial[1] += vy[i];
 
         ax[i] = 0;
         ay[i] = 0;
@@ -953,6 +1008,11 @@ modeler.model = function() {
         charge[i] = 2*(i%2)-1;      // alternate negative and positive charges
       }
     }
+
+    v_CM_initial[0] /= mol_number;
+    v_CM_initial[1] /= mol_number;
+
+    console.log("initial v_CM: [%f, %f]", v_CM_initial[0], v_CM_initial[1]);
 
     return model;
   };
