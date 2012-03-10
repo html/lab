@@ -66,6 +66,8 @@ modeler.model = function() {
     CHARGE   : coreModel.INDICES.CHARGE
   };
 
+  coreModel.setSize(size);
+
   //
   // The abstract_to_real_temperature(t) function is used to map temperatures in abstract units
   // within a range of 0..10 to the 'real' temperature <mv^2>/2k (remember there's only 2 DOF)
@@ -432,6 +434,7 @@ modeler.model = function() {
   model.size = function(x) {
     if (!arguments.length) return size;
     size = x;
+    coreModel.setSize(x);
     return model;
   };
 
