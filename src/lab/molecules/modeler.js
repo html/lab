@@ -4,7 +4,7 @@
 // modeler.js
 //
 
-var coreModel = require('./modeler').model;
+var coreModel = require('./model').model;
 
 modeler = {};
 modeler.VERSION = '0.2.0';
