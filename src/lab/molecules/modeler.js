@@ -24,14 +24,6 @@ modeler.model = function() {
       tick_counter = 0,
       new_step = false,
       epsilon, sigma,
-      max_ljf_repulsion = -200.0,
-      min_ljf_attraction = 0.001,
-      max_ljf_distance,
-      min_ljf_distance,
-      max_coulomb_force = 20.0,
-      min_coulomb_force = 0.01,
-      max_coulomb_distance,
-      min_coulomb_distance,
       pressure, pressures = [0],
       sample_time, sample_times = [],
       temperature,
@@ -53,43 +45,26 @@ modeler.model = function() {
       //
       // A two dimensional array consisting of arrays of node property values
       //
-      nodes,
+      nodes;
 
-      //
-      // Indexes into the nodes array for the individual node property arrays
-      //
-      // Access to these within this module will be faster if they are vars in this closure rather than property lookups.
-      // However, publish the indices to model.INDICES for use outside this module.
-      //
-      RADIUS_INDEX   =  0,
-      PX_INDEX       =  1,
-      PY_INDEX       =  2,
-      X_INDEX        =  3,
-      Y_INDEX        =  4,
-      VX_INDEX       =  5,
-      VY_INDEX       =  6,
-      SPEED_INDEX    =  7,
-      AX_INDEX       =  8,
-      AY_INDEX       =  9,
-      HALFMASS_INDEX = 10,
-      CHARGE_INDEX   = 11;
-
-
+  //
+  // Indexes into the nodes array for the individual node property arrays
+  // (re-export these from coreModel for convenience)
+  //
   model.INDICES = {
-    RADIUS   : RADIUS_INDEX,
-    PX       : PX_INDEX,
-    PY       : PY_INDEX,
-    X        : X_INDEX,
-    Y        : Y_INDEX,
-    VX       : VX_INDEX,
-    VY       : VY_INDEX,
-    SPEED    : SPEED_INDEX,
-    AX       : AX_INDEX,
-    AY       : AY_INDEX,
-    HALFMASS : HALFMASS_INDEX,
-    CHARGE   : CHARGE_INDEX
+    RADIUS   : coreModel.INDICES.RADIUS,
+    PX       : coreModel.INDICES.PX,
+    PY       : coreModel.INDICES.PY,
+    X        : coreModel.INDICES.X,
+    Y        : coreModel.INDICES.Y,
+    VX       : coreModel.INDICES.VX,
+    VY       : coreModel.INDICES.VY,
+    SPEED    : coreModel.INDICES.SPEED,
+    AX       : coreModel.INDICES.AX,
+    AY       : coreModel.INDICES.AY,
+    HALFMASS : coreModel.INDICES.HALFMASS,
+    CHARGE   : coreModel.INDICES.CHARGE
   };
-
 
   //
   // The abstract_to_real_temperature(t) function is used to map temperatures in abstract units
@@ -103,57 +78,6 @@ modeler.model = function() {
     var i, s = 0, n = nodes[0].length;
     i = -1; while (++i < n) { s += speed[i]; }
     return s/n;
-  }
-
-  //
-  // Calculate the minimum and maximum distances for applying lennard-jones forces
-  //
-  function setup_ljf_limits() {
-    var i, f;
-    for (i = 0; i <= 100; i+=0.001) {
-      f = molecules_lennard_jones.force(i);
-      if (f > max_ljf_repulsion) {
-        min_ljf_distance = i;
-        break;
-      }
-    }
-
-    for (;i <= 100; i+=0.001) {
-      f = molecules_lennard_jones.force(i);
-      if (f > min_ljf_attraction) {
-        break;
-      }
-    }
-
-    for (;i <= 100; i+=0.001) {
-      f = molecules_lennard_jones.force(i);
-      if (f < min_ljf_attraction) {
-        max_ljf_distance = i;
-        break;
-      }
-    }
-  }
-
-  //
-  // Calculate the minimum and maximum distances for applying coulomb forces
-  //
-  function setup_coulomb_limits() {
-    var i, f;
-    for (i = 0.001; i <= 100; i+=0.001) {
-      f = molecules_coulomb.force(i, -1, 1);
-      if (f < max_coulomb_force) {
-        min_coulomb_distance = i;
-        break;
-      }
-    }
-
-    for (;i <= 100; i+=0.001) {
-      f = molecules_coulomb.force(i, -1, 1);
-      if (f < min_coulomb_force) {
-        break;
-      }
-    }
-    max_coulomb_distance = i;
   }
 
   function tick_history_list_push() {
@@ -332,9 +256,10 @@ modeler.model = function() {
     // am not using the coefficients beyond setting the ljf limits yet ...
     epsilon = e;
     sigma = s;
+
+    // Does nothing useful now. TODO adapt for multiple models & multiple molecule types.
     molecules_lennard_jones.epsilon(e);
     molecules_lennard_jones.sigma(s);
-    setup_ljf_limits();
   };
 
   model.getEpsilon = function() {
@@ -385,6 +310,7 @@ modeler.model = function() {
   model.initialize = function(options) {
     options = options || {};
 
+    if (options.temperature != null) options.temperature = abstract_to_real_temperature(options.temperature);
     lennard_jones_forces = options.lennard_jones_forces || true;
     coulomb_forces       = options.coulomb_forces       || false;
     temperature_control  = options.temperature_control  || false;
@@ -431,6 +357,10 @@ modeler.model = function() {
   };
 
   model.nodes = function(options) {
+    options = options || {};
+
+    if (options.temperature != null) options.temperature = abstract_to_real_temperature(options.temperature);
+
     coreModel.createNodes(options);
 
     nodes    = coreModel.nodes;
@@ -446,6 +376,9 @@ modeler.model = function() {
     ay       = coreModel.ay;
     halfmass = coreModel.halfmass;
     charge   = coreModel.charge;
+
+    // The d3 molecule viewer requires this length to be set correctly:
+    atoms.length = nodes[0].length;
 
     return model;
   };
