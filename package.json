@@ -21,6 +21,7 @@
     "url": "https://github.com/concord-consortium/lab.git"
   },
   "dependencies": {
+    "dynamics-2d": "git://github.com/rklancer/dynamics-2d.git#package"
   },
   "devDependencies": {
     "uglify-js": "1.2.5",
