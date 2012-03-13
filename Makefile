@@ -207,7 +207,7 @@ lab/lab.grapher.js: \
 
 lab/lab.molecules.js: \
 	src/lab/start.js \
-	node_modules/Dynamics2D/browser/dynamics-2d.js \
+	node_modules/dynamics-2d/browser/dynamics-2d.js \
 	src/lab/molecules/coulomb.js \
 	src/lab/molecules/lennard-jones.js \
 	src/lab/molecules/modeler.js \
