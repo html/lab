@@ -193,7 +193,7 @@ md-engine: \
 	mkdir -p md-engine
 
 md-engine/2d-molecules.js: $(MD_ENGINE_JS_FILES)
-	$(BROWSERIFY) src/md-engine/model.js -o md-engine/2d-molecules.js
+	$(BROWSERIFY) src/md-engine/2d-molecules.js -o md-engine/2d-molecules.js
 
 lab:
 	mkdir -p lab
