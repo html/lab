@@ -1,6 +1,6 @@
 ignore_paths 'bin', 'examples', 'lab', 'node_modules'
 
-# FireSass allows Firebug to display the original Sass filename 
+# FireSass allows Firebug to display the original Sass filename
 # and line number of Sass-generated CSS styles
 # https://github.com/nex3/firesass
 FIRESASS = false
