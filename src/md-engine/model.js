@@ -146,9 +146,6 @@ setup_coulomb_limits = function() {
 };
 
 model.createNodes = function(options) {
-
-  console.log("creating nodes, okay?");
-
   options = options || {};
 
   var num                    = options.num                    || 50,
@@ -164,8 +161,7 @@ model.createNodes = function(options) {
       vMagnitude, vDirection, v_CM_initial;
 
   nrows = Math.floor(Math.sqrt(num));
-  ncols = nrows;
-  num   = nrows * ncols;
+  ncols = Math.ceil(num/nrows);
 
   model.nodes = nodes = arrays.create(nodePropertiesCount, null, 'regular');
 
