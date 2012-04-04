@@ -551,9 +551,15 @@ exports.makeModel = function() {
       // Compute linear and angular velocity of CM, compute temperature, and publish output state:
       computeCMMotion();
 
-      convertAllVelocitiesToInternalCoordinates();
+      // Remove motion of/around CM. Note this doesn't guarantee preservation of temperature.
+      for (i = 0; i < N; i++) {
+        addVelocity(i, -vx_CM, -vy_CM);
+        addAngularVelocity(i, -omega_CM);
+      }
+
+      // convertAllVelocitiesToInternalCoordinates();
       T = calculateTemperature();
-      convertAllVelocitiesToRealCoordinates();
+      // convertAllVelocitiesToRealCoordinates();
 
       model.computeOutputState();
     },
@@ -595,6 +601,7 @@ exports.makeModel = function() {
           n_steps = Math.floor(duration/dt),  // number of steps
           iloop,
           i,
+          vsq_before, vsq_after,
           rescalingFactor, // rescaling factor for Berendsen thermostat
           rescalingFunc,
           updateAccelerationsFunc = emptyFunction;
@@ -605,7 +612,7 @@ exports.makeModel = function() {
       }
 
       // Velocities are always in 'real' coodinates when entering or exiting the integrate() function.
-      convertAllVelocitiesToInternalCoordinates();
+      // convertAllVelocitiesToInternalCoordinates();
 
       for (iloop = 1; iloop <= n_steps; iloop++) {
         time = t_start + iloop*dt;
@@ -630,11 +637,33 @@ exports.makeModel = function() {
           rescalingFunc(i, rescalingFactor);
 
           // Convert velocities from "internal" to "real" velocities before calculating x, y and updating px, py
-          convertVelocityToRealCoordinates(i);
+          // convertVelocityToRealCoordinates(i);
 
           // Update r(t+dt) using v(t) and a(t)
           updatePosition(i);
+
+          // Update positions and velocities of any particles which have strayed beyond the wall locations.
+          // Note that this changes the total linear and angular momentum of the system.
           bounceOffWalls(i);
+        }
+
+        // Remove translation of and rotation around the center of mass.
+        computeCMMotion();
+
+        vsq_before = 0;
+        vsq_after = 0;
+        for (i = 0; i < N; i++) {
+          vsq_before += (vx[i]*vx[i] + vy[i]*vy[i]);
+          addVelocity(i, -vx_CM, -vy_CM);
+          addAngularVelocity(i, -omega_CM);
+          vsq_after += (vx[i]*vx[i] + vy[i]*vy[i]);
+        }
+
+        // Rescale velocities so total energy does not change after removing momentum "bump" from wall.
+        rescalingFactor = Math.sqrt(vsq_before / vsq_after);
+
+        for (i = 0; i < N; i++) {
+          scaleVelocity(i, rescalingFactor);
 
           // First half of update of v(t+dt, i), using v(t, i) and a(t, i)
           halfUpdateVelocityFromAcceleration(i);
@@ -656,15 +685,15 @@ exports.makeModel = function() {
         }
 
         // Update CM(t+dt), p_CM(t+dt), v_CM(t+dt), omega_CM(t+dt)
-        computeCMMotion();
+        // computeCMMotion();
 
-        convertAllVelocitiesToInternalCoordinates();
+        // convertAllVelocitiesToInternalCoordinates();
 
         T = calculateTemperature();
       } // end of integration loop
 
       // convert to real coordinates before leaving integrate()
-      convertAllVelocitiesToRealCoordinates();
+      // convertAllVelocitiesToRealCoordinates();
 
       model.computeOutputState();
     },
