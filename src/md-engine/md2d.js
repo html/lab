@@ -651,13 +651,14 @@ exports.makeModel = function() {
         computeCMMotion();
 
         vsq_before = 0;
-        vsq_after = 0;
         for (i = 0; i < N; i++) {
           vsq_before += (vx[i]*vx[i] + vy[i]*vy[i]);
           addVelocity(i, -vx_CM, -vy_CM);
           addAngularVelocity(i, -omega_CM);
-          vsq_after += (vx[i]*vx[i] + vy[i]*vy[i]);
         }
+
+        // Account for the rotational and translational energy we just removed:
+        vsq_after = vsq_before - 2 * I_CM*omega_CM*omega_CM / totalMass - vx_CM*vx_CM - vy_CM*vy_CM;
 
         // Rescale velocities so total energy does not change after removing momentum "bump" from wall.
         rescalingFactor = Math.sqrt(vsq_before / vsq_after);
