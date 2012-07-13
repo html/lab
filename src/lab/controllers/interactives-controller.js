@@ -1,4 +1,4 @@
-/*globals controllers model layout Thermometer $ */
+/*globals controllers model layout Thermometer $ ACTUAL_ROOT */
 
 /*jslint onevar: true*/
 controllers.interactivesController = function(interactive, interactive_view_id) {
