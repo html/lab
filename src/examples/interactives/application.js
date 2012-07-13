@@ -67,7 +67,6 @@ var ROOT = '/examples',
   function updateInteractiveHandler() {
     interactive = JSON.parse(editor.getValue());
     controller.loadInteractive(interactive, '#interactive-container');
-    controller.updateLayout();
   }
   updateInteractiveButton.onclick = updateInteractiveHandler;
 

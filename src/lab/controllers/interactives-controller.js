@@ -170,11 +170,6 @@ controllers.interactivesController = function(interactive, interactive_view_id) 
       }
     }
 
-
-  }
-
-  function updateLayout() {
-    layout.setupScreen(true);
   }
 
   // run this when controller is created
@@ -182,7 +177,6 @@ controllers.interactivesController = function(interactive, interactive_view_id) 
 
   // make these private variables and functions available
   controller.loadInteractive = loadInteractive;
-  controller.updateLayout = updateLayout;
 
   return controller;
 };
