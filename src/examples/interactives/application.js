@@ -1,10 +1,5 @@
 /*globals $ controllers model alert */
 /*jshint boss:true */
-// ------------------------------------------------------------
-//
-// General Parameters for the Molecular Simulation
-//
-// ------------------------------------------------------------
 
 DEVELOPMENT = true;
 
