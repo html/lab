@@ -7,6 +7,7 @@
   Thermometer
   SliderComponent
   layout
+  DEVELOPMENT
   $
   alert
   model: true
@@ -32,9 +33,7 @@ controllers.modelController = function(molecule_view_id, modelConfig, playerConf
       nodes,
 
       molecule_container,
-      step_counter,
-      therm,
-      epsilon_slider;
+      step_counter;
 
     // ------------------------------------------------------------
     //
@@ -127,17 +126,6 @@ controllers.modelController = function(molecule_view_id, modelConfig, playerConf
       model.on("tick", model_listener);
       if (!Number(maximum_model_steps) || (model.stepCounter() < maximum_model_steps)) {
         model.resume();
-      }
-    }
-
-    function modelStepBack() {
-      modelStop();
-      model.stepBack();
-    }
-
-    function modelStepForward() {
-      if (!Number(maximum_model_steps) || (model.stepCounter() < maximum_model_steps)) {
-        model.stepForward();
       }
     }
 
