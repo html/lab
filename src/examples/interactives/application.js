@@ -15,7 +15,7 @@ var ROOT = '/examples',
       selectInteractive = document.getElementById('select-interactive'),
       interactiveTextArea = document.getElementById('interactive-text-area'),
       updateInteractiveButton = document.getElementById('update-interactive-button'),
-      autoFormatSelectionButton = document.getElementById('auto-format-selection-button'),
+      autoFormatSelectionButton = document.getElementById('autoformat-selection-button'),
 
       editor,
       controller,
@@ -62,7 +62,7 @@ var ROOT = '/examples',
     var range = getSelectedRange();
     editor.autoFormatRange(range.from, range.to);
   }
-  autoFormatSelectionButton = autoFormatSelection;
+  autoFormatSelectionButton.onclick = autoFormatSelection;
 
   function updateInteractiveHandler() {
     interactive = JSON.parse(editor.getValue());
