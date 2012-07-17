@@ -29,6 +29,8 @@ controllers.modelController = function(molecule_view_id, modelConfig, playerConf
       coulomb_forces      = modelConfig.coulomb_forces,
       width               = modelConfig.width,
       height              = modelConfig.height,
+      radialBonds         = modelConfig.radialBonds,
+      obstacles           = modelConfig.obstacles,
 
       nodes,
 
@@ -67,7 +69,6 @@ controllers.modelController = function(molecule_view_id, modelConfig, playerConf
           height: height
         });
 
-
       if (atoms_properties) {
         model.createNewAtoms(atoms_properties);
       } else if (mol_number) {
@@ -76,6 +77,9 @@ controllers.modelController = function(molecule_view_id, modelConfig, playerConf
       } else {
         throw new Error("simpleModelController: tried to create a model without atoms or mol_number.");
       }
+
+      if (radialBonds) model.createRadialBonds(radialBonds);
+      if (obstacles) model.createObstacles(obstacles);
     }
 
     // ------------------------------------------------------------
